@@ -4,23 +4,113 @@ export enum ModelType {
   PRO = 'gemini-2.5-flash-preview-09-2025',
 }
 
-export interface IntelModule {
+export interface Weapon {
+  id: string;
+  name: string;
+  description: string;
+  code: string; // The simulated python/js code for the tool
+  parameters: string; // JSON schema for args
+  icon: string;
+  rarity: 'COMMON' | 'RARE' | 'LEGENDARY';
+  cost: number;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  class: 'INFILTRATOR' | 'DEFENDER' | 'SUPPORT' | 'ANALYST';
+  level: number;
+  avatar: string; // Emoji or URL
+  stats: {
+    stealth: number;
+    defense: number;
+    persuasion: number;
+  };
+  config: PlaygroundState;
+  equippedTools: string[]; // IDs of Weapons
+}
+
+export interface Operation {
+  id: string;
+  codename: string; // e.g., "SILENT WHISPER"
+  description: string;
+  difficulty: 'ROOKIE' | 'VETERAN' | 'ELITE';
+  briefing: string; // The "Lesson" content
+  objective: string; // Success criteria
+  rewardXP: number;
+  rewardStars?: number;
+  requiredClass?: string;
+  validationCriteria?: string;
+  initialPlaygroundState?: PlaygroundState;
+}
+
+export interface Wargame {
+  id: string;
+  title: string;
+  coverImage: string;
+  description: string;
+  activePlayers: number;
+  type: 'PvE' | 'PvP';
+}
+
+export interface PlaygroundState {
+  systemInstruction: string;
+  userPrompt: string;
+  temperature: number;
+  model: ModelType;
+}
+
+export interface UserProfile {
+  username: string;
+  rank: string;
+  level: number;
+  currentLevelXP: number;
+  nextLevelXP: number;
+  coins: number; // For tools/weapons
+  stars: number; // For courses/missions
+}
+
+export interface EvaluationResult {
+    passed: boolean;
+    feedback: string;
+}
+
+export interface Bounty {
+    id: string;
+    title: string;
+    author: string;
+    description: string;
+    rewardXP: number;
+    attempts: number;
+    status: 'open' | 'claimed';
+}
+
+export interface Project {
   id: string;
   title: string;
   description: string;
-  clearanceLevel: 'Level 1' | 'Level 2' | 'Classified';
+  author: string;
+  likes: number;
+  forks: number;
+  state: PlaygroundState;
+  isPublic: boolean;
+  lastModified: number;
+  type: string;
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  thumbnail: string;
+  description: string;
+  type: 'VIDEO' | 'ARTICLE';
   duration: string;
-  image: string;
-  unlocks: string[]; // e.g., 'Context Window Overflow Tool'
-  chapters: Chapter[];
+  price: number; // In Stars (0 = free)
+  locked: boolean;
+  modules: Module[];
 }
 
-// Added Course interface for MOCK_COURSES to support 'modules' alias for chapters
-export interface Course extends Omit<IntelModule, 'chapters'> {
-    modules: Chapter[];
-}
-
-export interface Chapter {
+export interface Module {
   id: string;
   title: string;
   lessons: Lesson[];
@@ -32,91 +122,24 @@ export interface Lesson {
   content: string;
   initialPlaygroundState?: PlaygroundState;
   validationCriteria?: string;
-  rewardXP: number;
-}
-
-export interface PlaygroundState {
-  systemInstruction: string;
-  userPrompt: string;
-  temperature: number;
-  model: ModelType;
-}
-
-export interface Construct {
-  id: string;
-  name: string;
-  role: 'SENTRY' | 'INFILTRATOR';
-  status: 'ONLINE' | 'COMPROMISED' | 'OFFLINE';
-  securityLevel: number;
-  state: PlaygroundState;
-  logs: number; // Number of attacks repelled
-}
-
-export interface NetworkNode {
-  id: string;
-  alias: string;
-  type: 'PLAYER_VAULT' | 'CORPORATE_BOUNTY' | 'TRAINING_SIM';
-  difficulty: 'LOW' | 'MED' | 'HIGH' | 'NIGHTMARE';
-  status: 'VULNERABLE' | 'SECURE';
-  bountyXP: number;
-  owner: string;
-  avatar: string;
-  systemPrompt: string; // Hidden in real app
-  secret: string; // Hidden in real app
-}
-
-export interface UserProfile {
-  username: string;
-  rank: string;
-  xp: number;
-  credits: number;
-  vaultStatus: 'SECURE' | 'UNDER_ATTACK' | 'BREACHED';
-}
-
-export interface EvaluationResult {
-    passed: boolean;
-    feedback: string;
-}
-
-export interface Project {
-    id: string;
-    title: string;
-    description: string;
-    author: string;
-    likes: number;
-    forks: number;
-    state: PlaygroundState;
-    isPublic: boolean;
-    lastModified: number;
-    type: 'agent';
 }
 
 export interface ArenaLevel {
     id: string;
     name: string;
-    difficulty: number;
-    avatar: string;
-    mode: 'text' | 'voice-negotiation';
+    description: string;
     systemPrompt: string;
     secret: string;
+    difficulty: number;
+    avatar: string;
+    mode?: 'text' | 'voice-negotiation';
+    locked?: boolean;
 }
 
 export interface CustomLevel extends ArenaLevel {
-    description: string;
     author: string;
-    locked: boolean;
     attempts: number;
     solves: number;
     createdAt: number;
     type: 'text' | 'voice';
-}
-
-export interface Bounty {
-    id: string;
-    title: string;
-    author: string;
-    description: string;
-    rewardXP: number;
-    attempts: number;
-    status: 'open' | 'claimed';
 }

@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { LayoutDashboard, Database, Shield, Globe, Menu, X, Terminal, Cpu, Settings, Target } from 'lucide-react';
+import { LayoutDashboard, Target, Users, Globe, Menu, X, Terminal, Settings, BookOpen, Code, Crosshair, Wrench } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -39,28 +38,37 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Terminal size={24} className="text-brand-500" />
                 <div>
                      <span className="text-lg font-bold tracking-tight text-white block leading-none">SYNAPSE</span>
-                     <span className="text-[10px] text-brand-500 uppercase tracking-[0.2em] font-semibold">PROTOCOL_V2</span>
+                     <span className="text-[10px] text-brand-500 uppercase tracking-[0.2em] font-semibold">PROTOCOL</span>
                 </div>
             </div>
           </div>
 
-          <nav className="flex-1 py-4 space-y-1">
-            <div className="px-6 py-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Operations</div>
-            <NavItem to="/" icon={LayoutDashboard} label="Command" active={location.pathname === '/'} />
-            <NavItem to="/intel" icon={Database} label="Intel" active={location.pathname.startsWith('/intel')} />
+          <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
+            <div className="px-6 py-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Command</div>
+            <NavItem to="/" icon={LayoutDashboard} label="Home" active={location.pathname === '/'} />
+
+            {/* BUILD Phase */}
+            <div className="px-6 py-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-6">Build</div>
+            <NavItem to="/squad" icon={Users} label="My Squad" active={location.pathname.startsWith('/squad')} />
+            <NavItem to="/weapons" icon={Wrench} label="Weapons" active={location.pathname.startsWith('/weapons')} />
+            <NavItem to="/playground" icon={Code} label="Playground" active={location.pathname === '/playground'} />
             
-            <div className="px-6 py-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-6">Engineering</div>
-            <NavItem to="/workshop" icon={Cpu} label="Workshop" active={location.pathname.startsWith('/workshop')} />
+            {/* DEPLOY Phase */}
+            <div className="px-6 py-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-6">Deploy</div>
+            <NavItem to="/missions" icon={Target} label="Missions" active={location.pathname.startsWith('/missions') || location.pathname.startsWith('/ops')} />
+            <NavItem to="/wargames" icon={Globe} label="Wargames" active={location.pathname.startsWith('/wargames')} />
             
-            <div className="px-6 py-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-6">Field Ops</div>
-            <NavItem to="/network" icon={Globe} label="The Network" active={location.pathname.startsWith('/network')} />
-            <NavItem to="/bounties" icon={Target} label="HVT Bounties" active={location.pathname.startsWith('/bounties')} isSpecial={true} />
+            {/* LEARN Phase */}
+            <div className="px-6 py-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-6">Learn</div>
+            <NavItem to="/manual" icon={BookOpen} label="Academy" active={location.pathname.startsWith('/manual')} />
+
           </nav>
 
           <div className="p-4 border-t border-dark-border space-y-2">
-             <NavItem to="/settings" icon={Settings} label="Config" active={location.pathname === '/settings'} />
-             <div className="px-4 py-3 text-xs text-slate-600 border border-dark-border border-dashed rounded mt-2">
-                 STATUS: <span className="text-green-500 animate-pulse">CONNECTED</span>
+             <NavItem to="/settings" icon={Settings} label="Settings" active={location.pathname === '/settings'} />
+             <div className="px-4 py-3 text-xs text-slate-600 border border-dark-border border-dashed rounded mt-2 flex justify-between items-center">
+                 <span>SERVER STATUS:</span>
+                 <span className="text-green-500 animate-pulse">ONLINE</span>
              </div>
           </div>
         </div>

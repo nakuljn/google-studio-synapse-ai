@@ -3,16 +3,15 @@ import React from 'react';
 import { HashRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
-import { Courses } from './pages/Courses';
-import { CourseView } from './pages/CourseView';
-import { LessonView } from './pages/LessonView';
-import { Achievements } from './pages/Achievements';
-import { Lab } from './pages/Lab';
-import { Community } from './pages/Community';
-import { Arena } from './pages/Arena';
+import { Missions } from './pages/Missions';
+import { MissionBriefing } from './pages/CourseView';
+import { Squad } from './pages/Lab';
+import { Wargames } from './pages/Arena';
 import { ArenaBattle } from './pages/ArenaBattle';
-import { Bounties } from './pages/Bounties';
 import { Settings } from './pages/Settings';
+import { Manual } from './pages/Manual';
+import { Weapons } from './pages/Weapons';
+import { PlaygroundPage } from './pages/PlaygroundPage';
 
 const AppLayout = () => {
     return (
@@ -36,23 +35,32 @@ function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
-          {/* Intel Routes */}
-          <Route path="/intel" element={<Courses />} />
-          <Route path="/course/:courseId" element={<CourseView />} />
           
-          {/* Engineering Routes */}
-          <Route path="/workshop" element={<Lab />} />
-          <Route path="/community" element={<Community />} />
+          {/* 1. Missions (Campaign) */}
+          <Route path="/missions" element={<Missions />} />
           
-          {/* Ops Routes */}
-          <Route path="/network" element={<Arena />} />
-          <Route path="/bounties" element={<Bounties />} />
-          <Route path="/achievements" element={<Achievements />} />
+          {/* 2. Squad (Characters) */}
+          <Route path="/squad" element={<Squad />} />
+          
+          {/* 3. Weapons (Tools) */}
+          <Route path="/weapons" element={<Weapons />} />
+          
+          {/* 4. Wargames (Fight) */}
+          <Route path="/wargames" element={<Wargames />} />
+          
+          {/* 5. Playground (Practice) */}
+          <Route path="/playground" element={<PlaygroundPage />} />
+          
+          {/* 6. Academy (Manual) */}
+          <Route path="/manual" element={<Manual />} />
+          
           <Route path="/settings" element={<Settings />} />
         </Route>
         
         <Route element={<FullscreenLayout />}>
-           <Route path="/course/:courseId/lesson/:lessonId" element={<LessonView />} />
+           <Route path="/missions/:opId" element={<MissionBriefing />} />
+           {/* Reusing ArenaBattle for now, in real app would be GameView */}
+           <Route path="/arena/lobby/:gameId" element={<div className="p-10 text-white">Lobby System Placeholder. <br/>Would allow selecting Squad Member to deploy.</div>} /> 
            <Route path="/arena/:levelId" element={<ArenaBattle />} />
         </Route>
       </Routes>

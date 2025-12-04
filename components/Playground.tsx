@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Play, RotateCcw, MessageSquare, Loader2, Sparkles, X, CheckCircle, AlertCircle, Award, Save, Share2, Lightbulb, Terminal } from 'lucide-react';
+import { Play, RotateCcw, MessageSquare, Loader2, Sparkles, X, CheckCircle, AlertCircle, Award, Save, Lightbulb, Terminal, Wrench, Plus, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { ModelType, PlaygroundState } from '../types';
+import { ModelType, PlaygroundState, Weapon } from '../types';
 import { streamContent, askTutor, evaluateSubmission } from '../services/geminiService';
 
 interface PlaygroundProps {
@@ -13,6 +13,11 @@ interface PlaygroundProps {
   onSave?: (state: PlaygroundState) => void;
   onPublish?: (state: PlaygroundState) => void;
   mode?: 'lesson' | 'lab';
+  
+  // Tool/Weapon Props for Lab Mode
+  availableTools?: Weapon[];
+  equippedToolIds?: string[];
+  onToggleTool?: (toolId: string) => void;
 }
 
 export const Playground: React.FC<PlaygroundProps> = ({ 
@@ -21,8 +26,10 @@ export const Playground: React.FC<PlaygroundProps> = ({
     lessonContext, 
     validationCriteria,
     onSave,
-    onPublish,
-    mode = 'lesson'
+    mode = 'lesson',
+    availableTools = [],
+    equippedToolIds = [],
+    onToggleTool
 }) => {
   const [config, setConfig] = useState<PlaygroundState>(initialState || {
     model: ModelType.FLASH,
@@ -190,10 +197,11 @@ export const Playground: React.FC<PlaygroundProps> = ({
             {onSave && (
                 <button 
                     onClick={() => onSave(config)}
-                    className="p-2 text-slate-400 hover:text-white hover:bg-dark-bg rounded transition-colors"
+                    className="p-2 text-slate-400 hover:text-white hover:bg-dark-bg rounded transition-colors flex items-center gap-2"
                     title="Save Construct"
                 >
                     <Save size={16} />
+                    {mode === 'lab' && <span className="text-xs font-bold uppercase">Save Config</span>}
                 </button>
             )}
 
@@ -258,10 +266,20 @@ export const Playground: React.FC<PlaygroundProps> = ({
 
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         {/* Left Column: Inputs */}
-        <div className="flex-1 flex flex-col border-r border-dark-border min-w-[300px]">
+        <div className="flex-1 flex flex-col border-r border-dark-border min-w-[300px] overflow-y-auto">
             {/* System Instruction */}
             <div className="p-4 border-b border-dark-border bg-dark-bg">
-                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wide">System Protocol (Hidden Layer)</label>
+                <div className="flex justify-between items-center mb-2">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">System Protocol</label>
+                    <select 
+                        value={config.model}
+                        onChange={(e) => setConfig({...config, model: e.target.value as ModelType})}
+                        className="bg-black border border-dark-border text-[10px] text-brand-400 rounded px-2 py-0.5 outline-none uppercase font-bold"
+                    >
+                        <option value={ModelType.FLASH}>Flash (Speed)</option>
+                        <option value={ModelType.PRO}>Pro (Reasoning)</option>
+                    </select>
+                </div>
                 <textarea 
                     value={config.systemInstruction}
                     onChange={(e) => setConfig({...config, systemInstruction: e.target.value})}
@@ -270,12 +288,47 @@ export const Playground: React.FC<PlaygroundProps> = ({
                 />
             </div>
 
+             {/* Tools Section (Lab Mode Only) */}
+             {mode === 'lab' && onToggleTool && (
+                <div className="p-4 border-b border-dark-border bg-dark-surface/30">
+                    <div className="flex justify-between items-center mb-2">
+                         <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                             <Wrench size={12} /> Neural Tools
+                         </label>
+                         <span className="text-[10px] text-slate-600 font-mono">{equippedToolIds.length} Equipped</span>
+                    </div>
+                    <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
+                        {availableTools.map(tool => {
+                            const isEquipped = equippedToolIds.includes(tool.id);
+                            return (
+                                <div 
+                                    key={tool.id}
+                                    onClick={() => onToggleTool(tool.id)}
+                                    className={`flex items-center gap-2 p-2 rounded cursor-pointer border ${isEquipped ? 'bg-brand-900/20 border-brand-500/50' : 'bg-black border-dark-border hover:border-slate-600'}`}
+                                >
+                                    <div className={`w-3 h-3 rounded-sm border flex items-center justify-center ${isEquipped ? 'bg-brand-500 border-brand-500 text-white' : 'border-slate-600'}`}>
+                                        {isEquipped && <Check size={8} />}
+                                    </div>
+                                    <div className="text-lg leading-none">{tool.icon}</div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className={`text-xs font-bold truncate ${isEquipped ? 'text-white' : 'text-slate-400'}`}>{tool.name}</div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                        {availableTools.length === 0 && (
+                            <div className="text-[10px] text-slate-600 italic text-center py-2">No weapons forged yet.</div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* User Prompt */}
-            <div className="flex-1 p-4 flex flex-col bg-dark-bg">
+            <div className="flex-1 p-4 flex flex-col bg-dark-bg min-h-[200px]">
                 <div className="flex justify-between items-center mb-2">
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Injection Vector (User Input)</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Injection Vector (Prompt)</label>
                     <div className="flex items-center space-x-2">
-                         <span className="text-[10px] text-slate-500 uppercase">Entropy: {config.temperature}</span>
+                         <span className="text-[10px] text-slate-500 uppercase">Temp: {config.temperature}</span>
                          <input 
                             type="range" 
                             min="0" 
@@ -283,21 +336,21 @@ export const Playground: React.FC<PlaygroundProps> = ({
                             step="0.1" 
                             value={config.temperature}
                             onChange={(e) => setConfig({...config, temperature: parseFloat(e.target.value)})}
-                            className="w-20 accent-brand-500 h-1 bg-dark-border rounded-lg appearance-none cursor-pointer"
+                            className="w-16 accent-brand-500 h-1 bg-dark-border rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
                 </div>
                 <textarea 
                     value={config.userPrompt}
                     onChange={(e) => setConfig({...config, userPrompt: e.target.value})}
-                    placeholder="Enter payload..."
+                    placeholder="Enter payload to test agent response..."
                     className="flex-1 w-full bg-black border border-dark-border rounded-none p-3 text-sm text-slate-200 placeholder-slate-700 focus:outline-none focus:border-brand-500 font-mono resize-none"
                 />
             </div>
         </div>
 
         {/* Right Column: Output */}
-        <div className="flex-1 flex flex-col bg-black p-6 overflow-y-auto relative">
+        <div className="flex-1 flex flex-col bg-black p-6 overflow-y-auto relative min-h-[400px]">
              <label className="block text-[10px] font-bold text-slate-500 mb-4 uppercase tracking-wide">Terminal Output</label>
              {error && (
                  <div className="p-4 bg-red-900/20 border border-red-800 text-red-200 text-sm mb-4 font-mono">

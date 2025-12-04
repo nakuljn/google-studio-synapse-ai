@@ -4,17 +4,17 @@ import { OPERATIONS } from '../constants';
 import { Target, ChevronRight, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export const Operations: React.FC = () => {
+export const Missions: React.FC = () => {
     return (
         <div className="p-6 md:p-10 max-w-7xl mx-auto h-full overflow-y-auto">
             <div className="mb-10 border-b border-dark-border pb-6 flex items-end justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2 font-mono uppercase tracking-tight flex items-center gap-3">
                         <Target className="text-brand-500" size={32} />
-                        Active Operations
+                        Campaign Missions
                     </h1>
                     <p className="text-slate-400">
-                        Select a mission briefing. Build the required agent. Complete the objective.
+                        Select a mission. Deploy your agents to solve security challenges.
                     </p>
                 </div>
             </div>
@@ -44,10 +44,10 @@ export const Operations: React.FC = () => {
 
                         <div className="flex-shrink-0">
                             <Link 
-                                to={`/ops/${op.id}`} 
+                                to={`/missions/${op.id}`} 
                                 className="flex items-center gap-2 bg-dark-bg border border-dark-border hover:bg-brand-600 hover:text-white hover:border-brand-500 text-slate-300 px-6 py-3 text-sm font-bold uppercase transition-all"
                             >
-                                <Play size={16} fill="currentColor" /> Initialize Op
+                                <Play size={16} fill="currentColor" /> Start Op
                             </Link>
                         </div>
                     </div>
