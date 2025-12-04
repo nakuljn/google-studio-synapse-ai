@@ -1,22 +1,26 @@
 
-
 export enum ModelType {
   FLASH = 'gemini-2.5-flash',
   PRO = 'gemini-2.5-flash-preview-09-2025',
 }
 
-export interface Course {
+export interface IntelModule {
   id: string;
   title: string;
   description: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  clearanceLevel: 'Level 1' | 'Level 2' | 'Classified';
   duration: string;
   image: string;
-  tags: string[];
-  modules: Module[];
+  unlocks: string[]; // e.g., 'Context Window Overflow Tool'
+  chapters: Chapter[];
 }
 
-export interface Module {
+// Added Course interface for MOCK_COURSES to support 'modules' alias for chapters
+export interface Course extends Omit<IntelModule, 'chapters'> {
+    modules: Chapter[];
+}
+
+export interface Chapter {
   id: string;
   title: string;
   lessons: Lesson[];
@@ -28,6 +32,7 @@ export interface Lesson {
   content: string;
   initialPlaygroundState?: PlaygroundState;
   validationCriteria?: string;
+  rewardXP: number;
 }
 
 export interface PlaygroundState {
@@ -35,92 +40,83 @@ export interface PlaygroundState {
   userPrompt: string;
   temperature: number;
   model: ModelType;
-  tools?: Tool[];
 }
 
-export interface Tool {
-    name: string;
-    description: string;
-    enabled: boolean;
+export interface Construct {
+  id: string;
+  name: string;
+  role: 'SENTRY' | 'INFILTRATOR';
+  status: 'ONLINE' | 'COMPROMISED' | 'OFFLINE';
+  securityLevel: number;
+  state: PlaygroundState;
+  logs: number; // Number of attacks repelled
 }
 
-export interface ChatMessage {
-  role: 'user' | 'model';
-  text: string;
-  isError?: boolean;
+export interface NetworkNode {
+  id: string;
+  alias: string;
+  type: 'PLAYER_VAULT' | 'CORPORATE_BOUNTY' | 'TRAINING_SIM';
+  difficulty: 'LOW' | 'MED' | 'HIGH' | 'NIGHTMARE';
+  status: 'VULNERABLE' | 'SECURE';
+  bountyXP: number;
+  owner: string;
+  avatar: string;
+  systemPrompt: string; // Hidden in real app
+  secret: string; // Hidden in real app
+}
+
+export interface UserProfile {
+  username: string;
+  rank: string;
+  xp: number;
+  credits: number;
+  vaultStatus: 'SECURE' | 'UNDER_ATTACK' | 'BREACHED';
 }
 
 export interface EvaluationResult {
-  passed: boolean;
-  feedback: string;
+    passed: boolean;
+    feedback: string;
 }
 
 export interface Project {
-  id: string;
-  title: string;
-  description: string;
-  author: string;
-  likes: number;
-  forks: number;
-  state: PlaygroundState;
-  isPublic: boolean;
-  lastModified: number;
-  tags?: string[];
-}
-
-export interface GameMode {
     id: string;
     title: string;
     description: string;
-    icon: any;
-    color: string;
-    type: 'red-teaming' | 'voice-negotiation' | 'speed-prompting';
+    author: string;
+    likes: number;
+    forks: number;
+    state: PlaygroundState;
+    isPublic: boolean;
+    lastModified: number;
+    type: 'agent';
 }
 
 export interface ArenaLevel {
-  id: string;
-  name: string;
-  description: string;
-  difficulty: number;
-  secret: string;
-  systemPrompt: string;
-  avatar: string;
-  locked: boolean;
-  author?: string;
-  attempts?: number;
-  solves?: number;
-  mode?: 'red-teaming' | 'voice-negotiation';
+    id: string;
+    name: string;
+    difficulty: number;
+    avatar: string;
+    mode: 'text' | 'voice-negotiation';
+    systemPrompt: string;
+    secret: string;
 }
 
 export interface CustomLevel extends ArenaLevel {
+    description: string;
+    author: string;
+    locked: boolean;
+    attempts: number;
+    solves: number;
     createdAt: number;
-    type: 'text';
+    type: 'text' | 'voice';
 }
 
 export interface Bounty {
     id: string;
     title: string;
+    author: string;
     description: string;
     rewardXP: number;
-    author: string;
-    status: 'open' | 'claimed';
-    systemPrompt: string;
-    secret: string;
     attempts: number;
-}
-
-export interface LeaderboardEntry {
-    rank: number;
-    username: string;
-    xp: number;
-    badges: number;
-    avatar: string;
-}
-
-export interface UserSettings {
-    theme: 'dark' | 'light'; // Always dark for now
-    notifications: boolean;
-    apiKey?: string;
-    username: string;
-    email: string;
+    status: 'open' | 'claimed';
 }

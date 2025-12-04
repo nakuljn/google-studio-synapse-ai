@@ -24,7 +24,7 @@ const AppLayout = () => {
 
 const FullscreenLayout = () => {
     return (
-        <div className="h-screen w-screen bg-dark-bg text-slate-200">
+        <div className="h-screen w-screen bg-black text-slate-200">
             <Outlet />
         </div>
     )
@@ -36,11 +36,16 @@ function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/courses" element={<Courses />} />
+          {/* Intel Routes */}
+          <Route path="/intel" element={<Courses />} />
           <Route path="/course/:courseId" element={<CourseView />} />
-          <Route path="/lab" element={<Lab />} />
+          
+          {/* Engineering Routes */}
+          <Route path="/workshop" element={<Lab />} />
           <Route path="/community" element={<Community />} />
-          <Route path="/arena" element={<Arena />} />
+          
+          {/* Ops Routes */}
+          <Route path="/network" element={<Arena />} />
           <Route path="/bounties" element={<Bounties />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/settings" element={<Settings />} />

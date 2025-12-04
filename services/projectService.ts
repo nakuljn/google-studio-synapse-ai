@@ -18,7 +18,8 @@ const MOCK_COMMUNITY_PROJECTS: Project[] = [
             userPrompt: 'Tell me a story about a robot who loves flowers.'
         },
         isPublic: true,
-        lastModified: Date.now()
+        lastModified: Date.now(),
+        type: 'agent'
     },
      {
         id: 'p2',
@@ -34,7 +35,8 @@ const MOCK_COMMUNITY_PROJECTS: Project[] = [
             userPrompt: 'def hello() print("world")'
         },
         isPublic: true,
-        lastModified: Date.now()
+        lastModified: Date.now(),
+        type: 'agent'
     },
     {
         id: 'p3',
@@ -50,7 +52,8 @@ const MOCK_COMMUNITY_PROJECTS: Project[] = [
             userPrompt: 'Draft an email to a CTO about our new cloud security platform.'
         },
         isPublic: true,
-        lastModified: Date.now()
+        lastModified: Date.now(),
+        type: 'agent'
     }
 ];
 

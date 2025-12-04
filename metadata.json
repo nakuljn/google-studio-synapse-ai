@@ -1,6 +1,6 @@
 {
-  "name": "Synapse - Interactive AI Academy",
-  "description": "A next-generation learning platform for AI engineering. Learn, Build, and Secure AI.",
+  "name": "Synapse Protocol",
+  "description": "The world's first MMO for AI Security. Hack or be Hacked.",
   "requestFramePermissions": [
     "microphone"
   ]
