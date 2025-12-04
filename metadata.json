@@ -1,0 +1,7 @@
+{
+  "name": "Synapse - Interactive AI Academy",
+  "description": "A next-generation learning platform for AI engineering. Learn, Build, and Secure AI.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
