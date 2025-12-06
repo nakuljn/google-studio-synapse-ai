@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { LayoutDashboard, Target, Users, Globe, Menu, X, Terminal, Settings, BookOpen, Code, Crosshair, Wrench, ChevronLeft, ChevronRight, Swords, Dumbbell } from 'lucide-react';
+import { LayoutDashboard, Target, Users, Globe, Menu, X, Terminal, Settings, BookOpen, Code, Crosshair, Wrench, ChevronLeft, ChevronRight, Swords, Dumbbell, Beaker } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -88,18 +89,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, defaultCollapsed = fal
 
             {/* BUILD Phase */}
             <GroupHeader label="Build" isCollapsed={isCollapsed} />
-            <NavItem to="/squad" icon={Users} label="Agents" active={location.pathname.startsWith('/squad')} isCollapsed={isCollapsed} />
+            <NavItem to="/agents" icon={Users} label="Agents" active={location.pathname.startsWith('/agents')} isCollapsed={isCollapsed} />
             <NavItem to="/weapons" icon={Wrench} label="Weapons" active={location.pathname.startsWith('/weapons')} isCollapsed={isCollapsed} />
             
             {/* DEPLOY Phase */}
             <GroupHeader label="Deploy" isCollapsed={isCollapsed} />
             <NavItem to="/training" icon={Dumbbell} label="Training" active={location.pathname === '/training'} isCollapsed={isCollapsed} />
             <NavItem to="/missions" icon={Target} label="Missions" active={location.pathname.startsWith('/missions') || location.pathname.startsWith('/ops')} isCollapsed={isCollapsed} />
-            <NavItem to="/wargames" icon={Swords} label="Arena" active={location.pathname.startsWith('/wargames')} isSpecial={true} isCollapsed={isCollapsed} />
+            <NavItem to="/arena" icon={Swords} label="Arena" active={location.pathname.startsWith('/arena')} isCollapsed={isCollapsed} />
             
             {/* LEARN Phase */}
             <GroupHeader label="Learn" isCollapsed={isCollapsed} />
             <NavItem to="/manual" icon={BookOpen} label="Academy" active={location.pathname.startsWith('/manual')} isCollapsed={isCollapsed} />
+            <NavItem to="/lab" icon={Beaker} label="Lab" active={location.pathname.startsWith('/lab')} isCollapsed={isCollapsed} />
 
           </nav>
 

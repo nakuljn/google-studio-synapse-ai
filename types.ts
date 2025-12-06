@@ -169,3 +169,22 @@ export interface CustomLevel extends ArenaLevel {
     createdAt: number;
     type: 'text' | 'voice';
 }
+
+export interface WorldEvent {
+  id: string;
+  type: 'DEPLOY' | 'BREACH' | 'SYSTEM' | 'MARKET';
+  message: string;
+  timestamp: string;
+  user?: string;
+}
+
+export interface LabExercise {
+  id: string;
+  title: string;
+  category: 'PROMPT_ENG' | 'AGENT_ARCH' | 'TOOLS';
+  description: string;
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  duration: string; // e.g., "15 min"
+  initialState: PlaygroundState;
+  instructions: string;
+}

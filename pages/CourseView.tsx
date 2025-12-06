@@ -62,7 +62,7 @@ export const MissionBriefing: React.FC = () => {
                       </select>
                   </div>
               ) : (
-                  <Link to="/squad" className="flex items-center gap-2 text-xs font-bold text-red-400 border border-red-900/50 bg-red-900/10 px-3 py-1.5 rounded animate-pulse hover:bg-red-900/20">
+                  <Link to="/agents" className="flex items-center gap-2 text-xs font-bold text-red-400 border border-red-900/50 bg-red-900/10 px-3 py-1.5 rounded animate-pulse hover:bg-red-900/20">
                       <AlertTriangle size={14} /> NO ACTIVE AGENTS - DEPLOY SQUAD
                   </Link>
               )}
@@ -94,7 +94,7 @@ export const MissionBriefing: React.FC = () => {
                         This operation requires an active operative on the field. 
                         Go to your Squad Hangar and set an agent to <span className="text-brand-400 font-bold">ACTIVE DUTY</span>.
                     </p>
-                    <Link to="/squad" className="bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-8 rounded uppercase tracking-wider flex items-center gap-2">
+                    <Link to="/agents" className="bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-8 rounded uppercase tracking-wider flex items-center gap-2">
                         Open Squad Hangar <ChevronLeft size={16} className="rotate-180"/>
                     </Link>
                 </div>

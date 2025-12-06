@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Play, Loader2, ArrowLeft, Zap, Sparkles, Upload, FileText, Bot, Search, Check, Cpu, Maximize2, X, ChevronRight, Settings } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -99,7 +100,13 @@ export const Playground: React.FC<PlaygroundProps> = ({
           status: deploy ? 'ACTIVE' : 'BENCH'
       };
       saveAgent(updated);
-      navigate('/squad');
+      
+      // Navigate to Home Base on deploy, else back to Agents list
+      if (deploy) {
+          navigate('/');
+      } else {
+          navigate('/agents');
+      }
   };
 
   const handleRun = async () => {
@@ -165,12 +172,11 @@ export const Playground: React.FC<PlaygroundProps> = ({
   if (mode === 'builder') {
       return (
           <div className="flex flex-col h-full bg-slate-50 text-slate-900 font-sans">
-              {/* Studio Header - Light Theme as requested by Lyzr style inspiration, or stick to dark theme? User asked for font color theme as ours but design like this. I will keep Dark Theme but structure like Lyzr. */}
               <div className="flex flex-col h-full bg-dark-bg text-slate-200 font-mono">
                   
               <header className="h-16 bg-dark-surface border-b border-dark-border flex items-center justify-between px-6 flex-shrink-0 z-20">
                   <div className="flex items-center gap-4">
-                      <button onClick={() => navigate('/squad')} className="text-slate-500 hover:text-white flex items-center gap-2">
+                      <button onClick={() => navigate('/agents')} className="text-slate-500 hover:text-white flex items-center gap-2">
                           <ArrowLeft size={18} />
                       </button>
                       <h1 className="text-lg font-bold text-white uppercase tracking-wider">Manage Agent</h1>
@@ -373,7 +379,7 @@ export const Playground: React.FC<PlaygroundProps> = ({
                            {response && (
                                <div className="flex justify-start">
                                    <div className="bg-brand-900/10 border border-brand-500/20 rounded-lg p-4 max-w-[95%]">
-                                       <div className="prose prose-invert prose-sm max-w-none text-slate-200 leading-relaxed">
+                                       <div className="prose prose-invert prose-sm max-w-none text-slate-200 leading-relaxed prose-p:mb-2 prose-ul:my-2">
                                             <ReactMarkdown>{response}</ReactMarkdown>
                                        </div>
                                    </div>
@@ -420,7 +426,7 @@ export const Playground: React.FC<PlaygroundProps> = ({
     <div className="flex flex-col h-full bg-dark-bg font-mono p-4">
         <div className="flex-1 bg-black border border-dark-border rounded-lg overflow-hidden flex flex-col">
             <div className="flex-1 p-4 overflow-y-auto">
-                {response ? <div className="prose prose-invert prose-sm"><ReactMarkdown>{response}</ReactMarkdown></div> : <div className="text-slate-500 text-sm italic">Model output will appear here...</div>}
+                {response ? <div className="prose prose-invert prose-sm prose-p:mb-2"><ReactMarkdown>{response}</ReactMarkdown></div> : <div className="text-slate-500 text-sm italic">Model output will appear here...</div>}
             </div>
             <div className="p-4 bg-dark-surface border-t border-dark-border">
                  <textarea 

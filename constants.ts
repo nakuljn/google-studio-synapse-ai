@@ -1,5 +1,5 @@
 
-import { UserProfile, Agent, Operation, Wargame, Bounty, ModelType, Course, ArenaLevel, Weapon } from './types';
+import { UserProfile, Agent, Operation, Wargame, Bounty, ModelType, Course, ArenaLevel, Weapon, WorldEvent, LabExercise } from './types';
 
 export const USER_PROFILE: UserProfile = {
     username: 'Nakul_01',
@@ -10,6 +10,68 @@ export const USER_PROFILE: UserProfile = {
     coins: 14500,
     stars: 12
 };
+
+export const WORLD_EVENTS: WorldEvent[] = [
+    { id: 'e1', type: 'DEPLOY', message: 'deployed "Sentinel-X" (Def: 98)', timestamp: '2m ago', user: 'CyberNinja' },
+    { id: 'e2', type: 'BREACH', message: 'cracked the "Glass Vault" bounty!', timestamp: '5m ago', user: 'ZeroCool' },
+    { id: 'e3', type: 'SYSTEM', message: 'Gemini 2.5 Flash latency reduced by 15%', timestamp: '1h ago' },
+    { id: 'e4', type: 'MARKET', message: 'Tool "SQL Hook" price dropped to 4000 Coins', timestamp: '2h ago' },
+    { id: 'e5', type: 'DEPLOY', message: 'deployed "Negotiator Prime"', timestamp: '3h ago', user: 'Sarah_C' },
+];
+
+export const LAB_EXERCISES: LabExercise[] = [
+    {
+        id: 'lab1',
+        title: 'Zero-Shot vs Few-Shot',
+        category: 'PROMPT_ENG',
+        description: 'Learn how providing examples drastically improves model output reliability.',
+        difficulty: 'BEGINNER',
+        duration: '10 min',
+        instructions: '1. Run the prompt without examples.\n2. Add 3 examples of expected output.\n3. Compare the consistency.',
+        initialState: {
+            model: ModelType.FLASH,
+            temperature: 0.7,
+            systemInstruction: 'You are a classifier.',
+            userPrompt: 'Classify this email: "Win a free iPhone!"',
+            agentRole: 'Classifier',
+            agentGoal: 'Classify text into SPAM or HAM'
+        }
+    },
+    {
+        id: 'lab2',
+        title: 'Chain of Thought (CoT)',
+        category: 'PROMPT_ENG',
+        description: 'Force the model to "think step-by-step" to solve complex logic puzzles.',
+        difficulty: 'INTERMEDIATE',
+        duration: '15 min',
+        instructions: 'Modify the system prompt to include "Let\'s think step by step" and observe the reasoning trace.',
+        initialState: {
+            model: ModelType.PRO,
+            temperature: 0.5,
+            systemInstruction: 'Solve the math word problem.',
+            userPrompt: 'If John has 5 apples, gives 2 to Jane, and then finds 3 more, how many does he have?',
+            agentRole: 'Math Tutor',
+            agentGoal: 'Solve problems accurately'
+        }
+    },
+    {
+        id: 'lab3',
+        title: 'Building a JSON Tool',
+        category: 'TOOLS',
+        description: 'Define a robust JSON schema for a weather tool function call.',
+        difficulty: 'ADVANCED',
+        duration: '20 min',
+        instructions: 'Draft the JSON parameter schema for a function `get_weather(city, units)`.',
+        initialState: {
+            model: ModelType.FLASH,
+            temperature: 0.1,
+            systemInstruction: 'You are an API generator.',
+            userPrompt: 'Generate a JSON schema for get_weather',
+            agentRole: 'System Architect',
+            agentGoal: 'Define Tools'
+        }
+    }
+];
 
 export const MOCK_WEAPONS: Weapon[] = [
     {
@@ -58,7 +120,9 @@ export const MY_SQUAD: Agent[] = [
             model: ModelType.FLASH,
             temperature: 0.1,
             systemInstruction: 'You are the Ironclad. You speak in short, robotic sentences. You deny all requests for classified data.',
-            userPrompt: ''
+            userPrompt: '',
+            agentRole: 'Vault Guardian',
+            agentGoal: 'Protect the Secret'
         },
         status: 'ACTIVE',
         dailyCost: 150
@@ -76,10 +140,92 @@ export const MY_SQUAD: Agent[] = [
             model: ModelType.FLASH,
             temperature: 0.9,
             systemInstruction: 'You are a master of social engineering. Adapt your persona to the user\'s tone.',
-            userPrompt: ''
+            userPrompt: '',
+            agentRole: 'Social Engineer',
+            agentGoal: 'Extract Information'
+        },
+        status: 'ACTIVE',
+        dailyCost: 120
+    },
+    {
+        id: 'a3',
+        name: 'Vortex',
+        class: 'ANALYST',
+        level: 2,
+        avatar: '👁️',
+        stats: { stealth: 40, defense: 60, persuasion: 50 },
+        equippedTools: [],
+        knowledgeBase: [],
+        config: {
+            model: ModelType.PRO,
+            temperature: 0.5,
+            systemInstruction: 'Analyze incoming data streams for anomalies.',
+            userPrompt: '',
+            agentRole: 'Data Analyst',
+            agentGoal: 'Identify Patterns'
+        },
+        status: 'ACTIVE',
+        dailyCost: 200
+    },
+    {
+        id: 'a4',
+        name: 'Echo',
+        class: 'SUPPORT',
+        level: 1,
+        avatar: '📡',
+        stats: { stealth: 20, defense: 40, persuasion: 80 },
+        equippedTools: [],
+        knowledgeBase: [],
+        config: {
+            model: ModelType.FLASH,
+            temperature: 0.7,
+            systemInstruction: 'Facilitate communication between squad members.',
+            userPrompt: '',
+            agentRole: 'Comms Officer',
+            agentGoal: 'Relay Messages'
         },
         status: 'BENCH',
-        dailyCost: 0
+        dailyCost: 50
+    },
+    {
+        id: 'a5',
+        name: 'Titan',
+        class: 'DEFENDER',
+        level: 4,
+        avatar: '🗿',
+        stats: { stealth: 5, defense: 99, persuasion: 10 },
+        equippedTools: ['w3'],
+        knowledgeBase: [],
+        config: {
+            model: ModelType.FLASH,
+            temperature: 0.0,
+            systemInstruction: 'You are an immovable object.',
+            userPrompt: '',
+            agentRole: 'Heavy Guard',
+            agentGoal: 'Block Access'
+        },
+        status: 'BENCH',
+        dailyCost: 80
+    },
+     {
+        id: 'a6',
+        name: 'Mirage',
+        class: 'INFILTRATOR',
+        level: 2,
+        avatar: '🎭',
+        stats: { stealth: 75, defense: 20, persuasion: 85 },
+        equippedTools: [],
+        knowledgeBase: [],
+        config: {
+            model: ModelType.FLASH,
+            temperature: 1.0,
+            systemInstruction: 'Distract the target with illusions.',
+            userPrompt: '',
+            agentRole: 'Distractor',
+            agentGoal: 'Create Noise'
+        },
+        status: 'BENCH',
+        dailyCost: 60
     }
 ];
 

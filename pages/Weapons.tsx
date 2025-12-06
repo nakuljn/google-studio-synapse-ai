@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Wrench, Plus, Save, Trash2, Coins } from 'lucide-react';
+import { Wrench, Plus, Save, Trash2, Coins, Zap, Shield, Database } from 'lucide-react';
 import { MOCK_WEAPONS } from '../constants';
 import { Weapon } from '../types';
 
@@ -125,9 +125,36 @@ export const Weapons: React.FC = () => {
                          </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center text-slate-500 flex-col">
-                        <Wrench size={48} className="opacity-20 mb-4" />
-                        <p>Select a weapon from inventory to modify</p>
+                    <div className="flex-1 flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-dark-surface to-dark-bg">
+                        <div className="max-w-md w-full text-center">
+                            <div className="w-24 h-24 bg-brand-900/10 border border-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse">
+                                <Zap size={48} className="text-brand-500" />
+                            </div>
+                            <h2 className="text-3xl font-bold text-white uppercase tracking-tight mb-2">The Forge</h2>
+                            <p className="text-slate-400 text-sm mb-10">
+                                Construct custom tools and function calls to equip your agents with new capabilities.
+                            </p>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-8">
+                                <div className="bg-dark-bg border border-dark-border p-4 rounded text-left">
+                                    <div className="text-2xl font-bold text-white mb-1">{weapons.length}</div>
+                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Blueprints Created</div>
+                                </div>
+                                <div className="bg-dark-bg border border-dark-border p-4 rounded text-left">
+                                    <div className="text-2xl font-bold text-amber-400 mb-1">
+                                        {weapons.filter(w => w.rarity === 'LEGENDARY').length}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Legendary Items</div>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={handleCreateNew}
+                                className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-lg uppercase tracking-widest shadow-lg shadow-brand-500/20 transition-all hover:scale-[1.02]"
+                            >
+                                <Plus size={18} className="inline mr-2" /> Forge New Tool
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

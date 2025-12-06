@@ -42,7 +42,7 @@ export const Wargames: React.FC = () => {
                                     </div>
                                     
                                     <Link 
-                                    to={`/arena/lobby/${game.id}`} 
+                                    to={`/arena/level/${game.id}`} 
                                     className="w-full block text-center bg-brand-600 text-white hover:bg-brand-500 py-3 rounded font-bold uppercase tracking-widest transition-all shadow-lg shadow-brand-600/20"
                                     >
                                         Find Match

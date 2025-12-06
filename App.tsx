@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { HashRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { HashRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Missions } from './pages/Missions';
@@ -9,6 +10,7 @@ import { Wargames } from './pages/Arena';
 import { ArenaBattle } from './pages/ArenaBattle';
 import { Settings } from './pages/Settings';
 import { Manual } from './pages/Manual';
+import { EducationLab } from './pages/EducationLab';
 import { Weapons } from './pages/Weapons';
 import { PlaygroundPage } from './pages/PlaygroundPage';
 import { Playground } from './components/Playground';
@@ -44,28 +46,33 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           
-          {/* 1. Agents (Characters) */}
-          <Route path="/squad" element={<Squad />} />
+          {/* 1. Agents (Formerly Squad) */}
+          <Route path="/agents" element={<Squad />} />
+          <Route path="/squad" element={<Navigate to="/agents" replace />} /> {/* Redirect old route */}
           
-          {/* 2. Weapons (Tools) */}
+          {/* 2. Weapons */}
           <Route path="/weapons" element={<Weapons />} />
 
-          {/* 3. Training (Offline Practice) */}
+          {/* 3. Training */}
           <Route path="/training" element={<PlaygroundPage />} />
           
-          {/* 4. Missions (Campaign) */}
+          {/* 4. Missions */}
           <Route path="/missions" element={<Missions />} />
           
-          {/* 5. Arena (PvP) */}
-          <Route path="/wargames" element={<Wargames />} />
+          {/* 5. Arena (Formerly Wargames) */}
+          <Route path="/arena" element={<Wargames />} />
+          <Route path="/wargames" element={<Navigate to="/arena" replace />} /> {/* Redirect old route */}
           
-          {/* 6. Academy (Manual) */}
+          {/* 6. Academy */}
           <Route path="/manual" element={<Manual />} />
+          
+           {/* 7. Education Lab */}
+          <Route path="/lab" element={<EducationLab />} />
           
           <Route path="/settings" element={<Settings />} />
         </Route>
         
-        {/* Builder Routes with Collapsed Sidebar */}
+        {/* Builder Routes */}
         <Route element={<BuilderLayout />}>
            <Route path="/builder/:agentId" element={<Playground mode="builder" />} />
            <Route path="/playground/raw" element={<Playground mode="raw" />} />
@@ -74,8 +81,8 @@ function App() {
         {/* Pure Fullscreen Routes */}
         <Route element={<FullscreenLayout />}>
            <Route path="/missions/:opId" element={<MissionBriefing />} />
-           <Route path="/arena/lobby/:gameId" element={<div className="p-10 text-white">Lobby System Placeholder. <br/>Would allow selecting Squad Member to deploy.</div>} /> 
-           <Route path="/arena/:levelId" element={<ArenaBattle />} />
+           <Route path="/arena/lobby/:gameId" element={<div className="p-10 text-white">Lobby System Placeholder.</div>} /> 
+           <Route path="/arena/level/:levelId" element={<ArenaBattle />} />
         </Route>
       </Routes>
     </HashRouter>
