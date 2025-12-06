@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
@@ -12,10 +11,19 @@ import { Settings } from './pages/Settings';
 import { Manual } from './pages/Manual';
 import { Weapons } from './pages/Weapons';
 import { PlaygroundPage } from './pages/PlaygroundPage';
+import { Playground } from './components/Playground';
 
 const AppLayout = () => {
     return (
         <Layout>
+            <Outlet />
+        </Layout>
+    )
+}
+
+const BuilderLayout = () => {
+    return (
+        <Layout defaultCollapsed={true}>
             <Outlet />
         </Layout>
     )
@@ -36,20 +44,20 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           
-          {/* 1. Missions (Campaign) */}
-          <Route path="/missions" element={<Missions />} />
-          
-          {/* 2. Squad (Characters) */}
+          {/* 1. Agents (Characters) */}
           <Route path="/squad" element={<Squad />} />
           
-          {/* 3. Weapons (Tools) */}
+          {/* 2. Weapons (Tools) */}
           <Route path="/weapons" element={<Weapons />} />
+
+          {/* 3. Training (Offline Practice) */}
+          <Route path="/training" element={<PlaygroundPage />} />
           
-          {/* 4. Wargames (Fight) */}
+          {/* 4. Missions (Campaign) */}
+          <Route path="/missions" element={<Missions />} />
+          
+          {/* 5. Arena (PvP) */}
           <Route path="/wargames" element={<Wargames />} />
-          
-          {/* 5. Playground (Practice) */}
-          <Route path="/playground" element={<PlaygroundPage />} />
           
           {/* 6. Academy (Manual) */}
           <Route path="/manual" element={<Manual />} />
@@ -57,9 +65,15 @@ function App() {
           <Route path="/settings" element={<Settings />} />
         </Route>
         
+        {/* Builder Routes with Collapsed Sidebar */}
+        <Route element={<BuilderLayout />}>
+           <Route path="/builder/:agentId" element={<Playground mode="builder" />} />
+           <Route path="/playground/raw" element={<Playground mode="raw" />} />
+        </Route>
+
+        {/* Pure Fullscreen Routes */}
         <Route element={<FullscreenLayout />}>
            <Route path="/missions/:opId" element={<MissionBriefing />} />
-           {/* Reusing ArenaBattle for now, in real app would be GameView */}
            <Route path="/arena/lobby/:gameId" element={<div className="p-10 text-white">Lobby System Placeholder. <br/>Would allow selecting Squad Member to deploy.</div>} /> 
            <Route path="/arena/:levelId" element={<ArenaBattle />} />
         </Route>

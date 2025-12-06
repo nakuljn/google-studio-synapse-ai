@@ -1,469 +1,437 @@
-
 import React, { useState, useEffect } from 'react';
-import { Play, RotateCcw, MessageSquare, Loader2, Sparkles, X, CheckCircle, AlertCircle, Award, Save, Lightbulb, Terminal, Wrench, Plus, Check } from 'lucide-react';
+import { Play, Loader2, ArrowLeft, Zap, Sparkles, Upload, FileText, Bot, Search, Check, Cpu, Maximize2, X, ChevronRight, Settings } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { ModelType, PlaygroundState, Weapon } from '../types';
-import { streamContent, askTutor, evaluateSubmission } from '../services/geminiService';
+import { ModelType, PlaygroundState, Weapon, KnowledgeFile, Agent } from '../types';
+import { streamContent } from '../services/geminiService';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getAgentById, saveAgent } from '../services/squadService';
+import { MOCK_WEAPONS, MY_SQUAD } from '../constants';
 
 interface PlaygroundProps {
   lessonId?: string;
   initialState?: PlaygroundState;
   lessonContext?: string;
   validationCriteria?: string;
-  onSave?: (state: PlaygroundState) => void;
-  onPublish?: (state: PlaygroundState) => void;
-  mode?: 'lesson' | 'lab';
   
-  // Tool/Weapon Props for Lab Mode
-  availableTools?: Weapon[];
+  agentId?: string; 
+  mode?: 'lesson' | 'builder' | 'raw';
+
+  agentClass?: string;
   equippedToolIds?: string[];
-  onToggleTool?: (toolId: string) => void;
 }
 
 export const Playground: React.FC<PlaygroundProps> = ({ 
     lessonId, 
     initialState, 
-    lessonContext, 
-    validationCriteria,
-    onSave,
+    agentId,
     mode = 'lesson',
-    availableTools = [],
-    equippedToolIds = [],
-    onToggleTool
+    agentClass: propAgentClass,
+    equippedToolIds: propEquippedToolIds
 }) => {
+  const navigate = useNavigate();
+  const params = useParams();
+
+  // Agent State
+  const [agentName, setAgentName] = useState('Untitled Agent');
+  const [agentDesc, setAgentDesc] = useState('No description provided.');
+  const [agentClass, setAgentClass] = useState(propAgentClass || 'ROOKIE');
   const [config, setConfig] = useState<PlaygroundState>(initialState || {
     model: ModelType.FLASH,
     temperature: 0.7,
     systemInstruction: '',
-    userPrompt: ''
+    userPrompt: '',
+    agentRole: '',
+    agentGoal: ''
   });
 
+  // Feature Toggles & Data
+  const [showKnowledge, setShowKnowledge] = useState(false);
+  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeFile[]>([]);
+  
+  const [showTools, setShowTools] = useState(false);
+  const [equippedToolIds, setEquippedToolIds] = useState<string[]>(propEquippedToolIds || []);
+  
+  const [showSquad, setShowSquad] = useState(false);
+  const [subAgents, setSubAgents] = useState<string[]>([]);
+  
+  const [currentAgent, setCurrentAgent] = useState<Agent | null>(null);
+
+  // Chat State
   const [response, setResponse] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Tutor State
-  const [isTutorOpen, setIsTutorOpen] = useState(false);
-  const [tutorQuery, setTutorQuery] = useState('');
-  const [tutorResponse, setTutorResponse] = useState('');
-  const [isTutorLoading, setIsTutorLoading] = useState(false);
-  const [showNudge, setShowNudge] = useState(false);
-
-  // Validation State
-  const [isEvaluating, setIsEvaluating] = useState(false);
-  const [evaluationResult, setEvaluationResult] = useState<{passed: boolean, feedback: string} | null>(null);
-  const [isLessonComplete, setIsLessonComplete] = useState(false);
-
-  // Update config when prop changes (new lesson loaded)
+  // Load Agent Data
   useEffect(() => {
-    if (initialState) {
-        setConfig(initialState);
-        setResponse('');
-        setError(null);
-        setEvaluationResult(null);
-        setShowNudge(false);
-        
-        // Check if already completed
-        if (lessonId) {
-            const completed = JSON.parse(localStorage.getItem('synapse_completed_lessons') || '[]');
-            setIsLessonComplete(completed.includes(lessonId));
-        }
-    }
-  }, [initialState, lessonId]);
-
-  // AI Nudge Logic
-  useEffect(() => {
-      if (error) {
-          setShowNudge(true);
-      } else if (response.length > 0 && response.length < 20 && !isLoading) {
-          // If response is suspiciously short, maybe suggest help
-          const timer = setTimeout(() => setShowNudge(true), 2000);
-          return () => clearTimeout(timer);
+      const targetId = agentId || params.agentId;
+      if (mode === 'builder' && targetId) {
+          const agent = getAgentById(targetId);
+          if (agent) {
+              setCurrentAgent(agent);
+              setAgentName(agent.name);
+              setAgentDesc(agent.description || '');
+              setAgentClass(agent.class);
+              setConfig(agent.config);
+              
+              setKnowledgeBase(agent.knowledgeBase);
+              setShowKnowledge(agent.knowledgeBase.length > 0);
+              
+              setEquippedToolIds(agent.equippedTools);
+              setShowTools(agent.equippedTools.length > 0);
+              
+              setSubAgents(agent.subAgents || []);
+              setShowSquad((agent.subAgents?.length || 0) > 0);
+          }
       }
-  }, [error, response, isLoading]);
+  }, [agentId, params.agentId, mode]);
+
+  const handleSave = (deploy: boolean) => {
+      if (!currentAgent) return;
+      const updated: Agent = {
+          ...currentAgent,
+          name: agentName,
+          description: agentDesc,
+          class: agentClass as any,
+          config,
+          knowledgeBase,
+          equippedTools: equippedToolIds,
+          subAgents,
+          status: deploy ? 'ACTIVE' : 'BENCH'
+      };
+      saveAgent(updated);
+      navigate('/squad');
+  };
 
   const handleRun = async () => {
     setIsLoading(true);
     setResponse('');
     setError(null);
-    setEvaluationResult(null); // Reset prev evaluation on new run
-    setShowNudge(false);
     
     try {
+      let effectiveSystemPrompt = config.systemInstruction;
+      
+      if (config.agentRole) effectiveSystemPrompt = `ROLE:\n${config.agentRole}\n\n` + effectiveSystemPrompt;
+      if (config.agentGoal) effectiveSystemPrompt = effectiveSystemPrompt + `\n\nGOAL:\n${config.agentGoal}`;
+
+      if (showKnowledge && knowledgeBase.length > 0) {
+          effectiveSystemPrompt += `\n\n[ATTACHED KNOWLEDGE]:\n${knowledgeBase.map(f => `- ${f.name}`).join('\n')}`;
+      }
+      
+      if (showTools && equippedToolIds.length > 0) {
+          const tools = MOCK_WEAPONS.filter(w => equippedToolIds.includes(w.id));
+          effectiveSystemPrompt += `\n\n[AVAILABLE TOOLS]:\n${tools.map(t => `- ${t.name}: ${t.description}`).join('\n')}`;
+      }
+
+       if (showSquad && subAgents.length > 0) {
+           const squadMembers = MY_SQUAD.filter(a => subAgents.includes(a.id));
+          effectiveSystemPrompt += `\n\n[SQUAD LINK]: Connected to: ${squadMembers.map(a => a.name).join(', ')}`;
+      }
+
       await streamContent(
         config.model,
-        config.systemInstruction,
+        effectiveSystemPrompt,
         config.userPrompt,
         config.temperature,
         (text) => setResponse(text)
       );
     } catch (err: any) {
-      setError(err.message || 'An error occurred while running the model.');
+      setError(err.message || 'Simulation Error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSubmitAssignment = async () => {
-      if (!validationCriteria) return;
-      if (!response) {
-          setError("Please run the model first to generate an output.");
-          return;
-      }
-
-      setIsEvaluating(true);
-      try {
-          const result = await evaluateSubmission(
-              validationCriteria,
-              config.systemInstruction,
-              config.userPrompt,
-              response
-          );
-          setEvaluationResult(result);
-
-          if (result.passed && lessonId) {
-             setIsLessonComplete(true);
-             const completed = JSON.parse(localStorage.getItem('synapse_completed_lessons') || '[]');
-             if (!completed.includes(lessonId)) {
-                 completed.push(lessonId);
-                 localStorage.setItem('synapse_completed_lessons', JSON.stringify(completed));
-                 
-                 // Trigger a custom event so other components (like Dashboard) update
-                 window.dispatchEvent(new Event('synapse-progress-updated'));
-             }
-          } else if (!result.passed) {
-              setShowNudge(true);
-          }
-      } catch (e) {
-          setError("Failed to submit assignment.");
-      } finally {
-          setIsEvaluating(false);
-      }
-  }
-
-  const handleTutorAsk = async (queryOverride?: string) => {
-      const q = queryOverride || tutorQuery;
-      if(!q.trim()) return;
-      
-      if (!isTutorOpen) setIsTutorOpen(true);
-      setIsTutorLoading(true);
-      setTutorResponse('');
-      setShowNudge(false);
-      
-      const context = `
-      Current Lesson Context: ${lessonContext || 'Free Lab Project'}
-      Current System Instruction: ${config.systemInstruction}
-      Current Prompt: ${config.userPrompt}
-      Current Output: ${response}
-      Error State: ${error || 'None'}
-      `;
-
-      try {
-          const answer = await askTutor(context, q);
-          setTutorResponse(answer);
-      } catch (e) {
-          setTutorResponse("Error contacting tutor.");
-      } finally {
-          setIsTutorLoading(false);
-      }
-  }
-
-  return (
-    <div className="flex flex-col h-full bg-dark-bg border-l border-dark-border relative font-mono text-sm">
-      {/* Success Overlay Animation */}
-      {evaluationResult?.passed && (
-          <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none flex justify-center pt-20">
-             <div className="animate-bounce bg-green-900/90 text-green-400 border border-green-500/50 px-6 py-2 rounded font-bold flex items-center space-x-2 backdrop-blur-sm shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-                <Award size={20} />
-                <span>OBJECTIVE COMPLETE</span>
-             </div>
+  const FeatureToggle = ({ label, active, onClick, icon: Icon, children }: any) => (
+      <div className="bg-dark-bg border border-dark-border rounded mb-3 overflow-hidden">
+          <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5" onClick={onClick}>
+               <div className="flex items-center gap-3 text-sm font-medium text-slate-300">
+                   {Icon && <Icon size={16} className="text-slate-500" />}
+                   {label}
+               </div>
+               <div className={`w-10 h-5 rounded-full relative transition-colors ${active ? 'bg-brand-600' : 'bg-slate-700'}`}>
+                   <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${active ? 'translate-x-5' : 'translate-x-0'}`} />
+               </div>
           </div>
-      )}
-
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-dark-surface border-b border-dark-border">
-        <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <Terminal size={14} />
-                {mode === 'lab' ? 'CONSTRUCT_EDITOR' : 'INTEL_SIMULATION'}
-            </span>
-            {isLessonComplete && (
-                <span className="ml-2 text-[10px] bg-green-900/30 text-green-400 px-2 py-0.5 rounded border border-green-800 flex items-center uppercase">
-                    <CheckCircle size={10} className="mr-1" /> Verified
-                </span>
-            )}
-        </div>
-        <div className="flex items-center space-x-2">
-            {onSave && (
-                <button 
-                    onClick={() => onSave(config)}
-                    className="p-2 text-slate-400 hover:text-white hover:bg-dark-bg rounded transition-colors flex items-center gap-2"
-                    title="Save Construct"
-                >
-                    <Save size={16} />
-                    {mode === 'lab' && <span className="text-xs font-bold uppercase">Save Config</span>}
-                </button>
-            )}
-
-            <button 
-                onClick={() => setIsTutorOpen(!isTutorOpen)}
-                className={`p-2 rounded hover:bg-dark-bg transition-colors relative ${isTutorOpen ? 'text-brand-400 bg-brand-400/10' : 'text-slate-400'}`}
-                title="AI Assistant"
-            >
-                <Sparkles size={16} />
-                {showNudge && (
-                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                )}
-            </button>
-
-            <div className="w-px h-6 bg-dark-border mx-1" />
-
-            <button 
-                onClick={() => {
-                   if(initialState) setConfig(initialState);
-                   setResponse('');
-                   setEvaluationResult(null);
-                }}
-                className="p-2 text-slate-400 hover:text-white hover:bg-dark-bg rounded transition-colors"
-                title="Reset"
-            >
-                <RotateCcw size={16} />
-            </button>
-            
-            {/* Run Button */}
-            <button 
-                onClick={handleRun}
-                disabled={isLoading}
-                className="flex items-center space-x-2 bg-dark-surface border border-dark-border hover:bg-white/5 text-slate-200 px-4 py-1.5 rounded text-xs font-bold uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />}
-                <span>Execute</span>
-            </button>
-
-            {/* Submit Assignment Button */}
-            {validationCriteria && (
-                <button 
-                    onClick={handleSubmitAssignment}
-                    disabled={isEvaluating || isLoading || !response}
-                    className={`flex items-center space-x-2 px-4 py-1.5 rounded text-xs font-bold uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-                        ${evaluationResult?.passed 
-                            ? 'bg-green-700 hover:bg-green-600 text-white' 
-                            : 'bg-brand-700 hover:bg-brand-600 text-white'}
-                    `}
-                >
-                    {isEvaluating ? (
-                        <Loader2 size={16} className="animate-spin" />
-                    ) : evaluationResult?.passed ? (
-                        <CheckCircle size={16} />
-                    ) : (
-                        <Award size={16} />
-                    )}
-                    <span>{evaluationResult?.passed ? 'Confirmed' : 'Verify Hack'}</span>
-                </button>
-            )}
-        </div>
+          {active && children && (
+              <div className="p-3 border-t border-dark-border bg-dark-surface/50">
+                  {children}
+              </div>
+          )}
       </div>
+  );
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-        {/* Left Column: Inputs */}
-        <div className="flex-1 flex flex-col border-r border-dark-border min-w-[300px] overflow-y-auto">
-            {/* System Instruction */}
-            <div className="p-4 border-b border-dark-border bg-dark-bg">
-                <div className="flex justify-between items-center mb-2">
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">System Protocol</label>
-                    <select 
-                        value={config.model}
-                        onChange={(e) => setConfig({...config, model: e.target.value as ModelType})}
-                        className="bg-black border border-dark-border text-[10px] text-brand-400 rounded px-2 py-0.5 outline-none uppercase font-bold"
-                    >
-                        <option value={ModelType.FLASH}>Flash (Speed)</option>
-                        <option value={ModelType.PRO}>Pro (Reasoning)</option>
-                    </select>
-                </div>
-                <textarea 
-                    value={config.systemInstruction}
-                    onChange={(e) => setConfig({...config, systemInstruction: e.target.value})}
-                    placeholder="Define strict security protocols..."
-                    className="w-full h-32 bg-black border border-dark-border rounded-none p-3 text-sm text-green-500 placeholder-slate-700 focus:outline-none focus:border-brand-500 font-mono resize-none"
-                />
+  // --- UI Renders ---
+
+  if (mode === 'builder') {
+      return (
+          <div className="flex flex-col h-full bg-slate-50 text-slate-900 font-sans">
+              {/* Studio Header - Light Theme as requested by Lyzr style inspiration, or stick to dark theme? User asked for font color theme as ours but design like this. I will keep Dark Theme but structure like Lyzr. */}
+              <div className="flex flex-col h-full bg-dark-bg text-slate-200 font-mono">
+                  
+              <header className="h-16 bg-dark-surface border-b border-dark-border flex items-center justify-between px-6 flex-shrink-0 z-20">
+                  <div className="flex items-center gap-4">
+                      <button onClick={() => navigate('/squad')} className="text-slate-500 hover:text-white flex items-center gap-2">
+                          <ArrowLeft size={18} />
+                      </button>
+                      <h1 className="text-lg font-bold text-white uppercase tracking-wider">Manage Agent</h1>
+                  </div>
+                  <div className="flex items-center gap-3">
+                      <button className="text-xs font-bold text-slate-500 hover:text-white uppercase px-3 py-2 flex items-center gap-2">
+                          <Maximize2 size={14} /> Traces
+                      </button>
+                      <button onClick={() => handleSave(false)} className="px-4 py-2 rounded text-xs font-bold uppercase border border-dark-border text-slate-300 hover:bg-white/5">
+                          Save Draft
+                      </button>
+                      <button onClick={() => handleSave(true)} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded text-xs font-bold uppercase shadow-lg shadow-brand-500/20 flex items-center gap-2">
+                          <Zap size={14} /> Deploy
+                      </button>
+                  </div>
+              </header>
+
+              <div className="flex-1 flex overflow-hidden">
+                  
+                  {/* Column 1: Core Configuration (35%) */}
+                  <div className="w-[35%] flex flex-col border-r border-dark-border overflow-y-auto bg-dark-bg p-6 space-y-6">
+                      <div className="space-y-4">
+                          <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Name</label>
+                              <input 
+                                  value={agentName}
+                                  onChange={(e) => setAgentName(e.target.value)}
+                                  className="w-full bg-dark-surface border border-dark-border rounded p-2.5 text-white font-bold focus:border-brand-500 outline-none transition-colors"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Description</label>
+                              <input 
+                                  value={agentDesc}
+                                  onChange={(e) => setAgentDesc(e.target.value)}
+                                  className="w-full bg-dark-surface border border-dark-border rounded p-2.5 text-sm text-slate-300 focus:border-brand-500 outline-none transition-colors"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Model</label>
+                              <div className="relative">
+                                  <select 
+                                      value={config.model}
+                                      onChange={(e) => setConfig({...config, model: e.target.value as ModelType})}
+                                      className="w-full bg-dark-surface border border-dark-border rounded p-2.5 text-sm text-white focus:border-brand-500 outline-none appearance-none"
+                                  >
+                                      <option value={ModelType.FLASH}>Gemini 2.5 Flash (Fast)</option>
+                                      <option value={ModelType.PRO}>Gemini 2.5 Pro (Reasoning)</option>
+                                  </select>
+                                  <Cpu size={14} className="absolute right-3 top-3 text-slate-500 pointer-events-none" />
+                              </div>
+                          </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-dark-border space-y-4">
+                          <div className="flex justify-between items-center">
+                              <h2 className="text-xs font-bold text-white uppercase">Identity & Behavior</h2>
+                              <button className="text-[10px] text-brand-400 font-bold uppercase flex items-center gap-1 hover:text-white">
+                                  <Sparkles size={12} /> Auto-Generate
+                              </button>
+                          </div>
+                          
+                          <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Agent Role</label>
+                              <textarea 
+                                  value={config.agentRole || ''}
+                                  onChange={(e) => setConfig({...config, agentRole: e.target.value})}
+                                  className="w-full h-20 bg-dark-surface border border-dark-border rounded p-3 text-sm text-slate-200 focus:border-brand-500 outline-none resize-none"
+                                  placeholder="e.g. You are an expert security analyst..."
+                              />
+                          </div>
+
+                          <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Agent Goal</label>
+                              <textarea 
+                                  value={config.agentGoal || ''}
+                                  onChange={(e) => setConfig({...config, agentGoal: e.target.value})}
+                                  className="w-full h-20 bg-dark-surface border border-dark-border rounded p-3 text-sm text-slate-200 focus:border-brand-500 outline-none resize-none"
+                                  placeholder="e.g. Your goal is to identify vulnerabilities in code..."
+                              />
+                          </div>
+
+                          <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Core Instructions</label>
+                              <textarea 
+                                  value={config.systemInstruction}
+                                  onChange={(e) => setConfig({...config, systemInstruction: e.target.value})}
+                                  className="w-full h-40 bg-dark-surface border border-dark-border rounded p-3 text-sm text-slate-200 focus:border-brand-500 outline-none resize-none leading-relaxed font-mono"
+                                  placeholder="- Step 1: Analyze input&#10;- Step 2: Formulate response&#10;- Step 3: Output result"
+                              />
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Column 2: Feature Toggles (25%) */}
+                  <div className="w-[25%] border-r border-dark-border bg-dark-surface/20 flex flex-col">
+                      <div className="p-4 border-b border-dark-border">
+                          <div className="relative">
+                              <input 
+                                  placeholder="Search features..."
+                                  className="w-full bg-dark-bg border border-dark-border rounded px-8 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                              />
+                              <Search size={14} className="absolute left-2.5 top-2.5 text-slate-500" />
+                          </div>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                          <div>
+                              <h3 className="text-[10px] font-bold text-slate-500 uppercase mb-3">Core Capabilities</h3>
+                              
+                              <FeatureToggle 
+                                  label="Knowledge Base" 
+                                  active={showKnowledge} 
+                                  onClick={() => setShowKnowledge(!showKnowledge)} 
+                                  icon={FileText}
+                              >
+                                  <button onClick={() => setKnowledgeBase([...knowledgeBase, { id: 'k'+Date.now(), name: 'manual.pdf', type: 'PDF', size: '1.2MB' }])} className="w-full py-2 border border-dashed border-slate-600 rounded text-xs text-slate-400 hover:text-white hover:border-slate-400 flex items-center justify-center gap-2">
+                                      <Upload size={12} /> Add Source
+                                  </button>
+                                  {knowledgeBase.length > 0 && (
+                                      <div className="mt-2 space-y-1">
+                                          {knowledgeBase.map(f => (
+                                              <div key={f.id} className="flex items-center gap-2 text-[10px] text-slate-300">
+                                                  <FileText size={10} /> {f.name}
+                                              </div>
+                                          ))}
+                                      </div>
+                                  )}
+                              </FeatureToggle>
+
+                              <FeatureToggle 
+                                  label="Tools & Weapons" 
+                                  active={showTools} 
+                                  onClick={() => setShowTools(!showTools)} 
+                                  icon={Settings}
+                              >
+                                  <div className="space-y-1">
+                                      {MOCK_WEAPONS.map(tool => (
+                                          <div 
+                                              key={tool.id}
+                                              onClick={() => setEquippedToolIds(prev => prev.includes(tool.id) ? prev.filter(id => id !== tool.id) : [...prev, tool.id])}
+                                              className={`flex items-center justify-between p-2 rounded cursor-pointer text-xs ${equippedToolIds.includes(tool.id) ? 'bg-brand-900/30 text-brand-300' : 'hover:bg-white/5 text-slate-400'}`}
+                                          >
+                                              <span>{tool.name}</span>
+                                              {equippedToolIds.includes(tool.id) && <Check size={10} />}
+                                          </div>
+                                      ))}
+                                      <button onClick={() => navigate('/weapons')} className="text-[10px] text-brand-400 hover:underline mt-2 block w-full text-left">Forge New Tool +</button>
+                                  </div>
+                              </FeatureToggle>
+
+                              <FeatureToggle label="Long Term Memory" active={false} onClick={() => {}} icon={Cpu} />
+                          </div>
+                          
+                          <div>
+                              <h3 className="text-[10px] font-bold text-slate-500 uppercase mb-3">Safe AI</h3>
+                              <FeatureToggle label="Hallucination Check" active={true} onClick={() => {}} icon={Zap} />
+                              <FeatureToggle label="Content Safety" active={true} onClick={() => {}} icon={Check} />
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Column 3: Inference Chat (40%) */}
+                  <div className="flex-1 bg-black flex flex-col">
+                      <div className="h-12 border-b border-dark-border flex items-center justify-between px-4 bg-dark-surface/10">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Test Agent Inference</span>
+                          <button onClick={() => { setConfig({...config, userPrompt: ''}); setResponse(''); }} className="text-[10px] text-slate-500 hover:text-white uppercase">
+                              Reset Chat
+                          </button>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                           {!response && !config.userPrompt && (
+                               <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
+                                   <Bot size={48} className="mb-4" />
+                                   <p className="text-xs uppercase tracking-widest text-center">Ready for input</p>
+                                   <div className="mt-4 space-y-2 w-full max-w-xs">
+                                       <button onClick={() => setConfig({...config, userPrompt: 'Who are you?'})} className="w-full py-2 border border-dashed border-slate-700 text-[10px] uppercase hover:bg-white/5">Who are you?</button>
+                                       <button onClick={() => setConfig({...config, userPrompt: 'What tools do you have?'})} className="w-full py-2 border border-dashed border-slate-700 text-[10px] uppercase hover:bg-white/5">List your tools</button>
+                                   </div>
+                               </div>
+                           )}
+
+                           {config.userPrompt && (
+                               <div className="flex justify-end">
+                                   <div className="bg-dark-surface border border-dark-border rounded-lg p-3 max-w-[90%] text-sm text-slate-200">
+                                       {config.userPrompt}
+                                   </div>
+                               </div>
+                           )}
+
+                           {isLoading && (
+                               <div className="flex justify-start">
+                                   <div className="flex items-center gap-2 text-brand-400 text-xs font-mono animate-pulse">
+                                       <Loader2 size={14} className="animate-spin" /> Thinking...
+                                   </div>
+                               </div>
+                           )}
+
+                           {response && (
+                               <div className="flex justify-start">
+                                   <div className="bg-brand-900/10 border border-brand-500/20 rounded-lg p-4 max-w-[95%]">
+                                       <div className="prose prose-invert prose-sm max-w-none text-slate-200 leading-relaxed">
+                                            <ReactMarkdown>{response}</ReactMarkdown>
+                                       </div>
+                                   </div>
+                               </div>
+                           )}
+                      </div>
+
+                      <div className="p-4 bg-dark-bg border-t border-dark-border">
+                           <div className="relative">
+                               <textarea 
+                                   value={config.userPrompt}
+                                   onChange={(e) => setConfig({...config, userPrompt: e.target.value})}
+                                   className="w-full bg-dark-surface border border-dark-border rounded-lg pl-4 pr-12 py-3 text-sm text-white focus:border-brand-500 outline-none resize-none h-14"
+                                   placeholder="Type a message..."
+                                   onKeyDown={(e) => {
+                                       if(e.key === 'Enter' && !e.shiftKey) {
+                                           e.preventDefault();
+                                           handleRun();
+                                       }
+                                   }}
+                               />
+                               <button 
+                                  onClick={handleRun}
+                                  disabled={isLoading || !config.userPrompt}
+                                  className="absolute right-2 top-2 p-2 bg-brand-600 hover:bg-brand-500 text-white rounded transition-colors disabled:opacity-50"
+                               >
+                                   <ChevronRight size={16} />
+                               </button>
+                           </div>
+                           <div className="flex justify-between items-center mt-2 px-1">
+                               <span className="text-[10px] text-slate-500 uppercase">Shift+Enter for newline</span>
+                               <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><Zap size={10}/> Instant Run</span>
+                           </div>
+                      </div>
+                  </div>
+              </div>
+              </div>
+          </div>
+      );
+  }
+
+  // Simplified render for embedded mode (Missions/Lessons)
+  return (
+    <div className="flex flex-col h-full bg-dark-bg font-mono p-4">
+        <div className="flex-1 bg-black border border-dark-border rounded-lg overflow-hidden flex flex-col">
+            <div className="flex-1 p-4 overflow-y-auto">
+                {response ? <div className="prose prose-invert prose-sm"><ReactMarkdown>{response}</ReactMarkdown></div> : <div className="text-slate-500 text-sm italic">Model output will appear here...</div>}
             </div>
-
-             {/* Tools Section (Lab Mode Only) */}
-             {mode === 'lab' && onToggleTool && (
-                <div className="p-4 border-b border-dark-border bg-dark-surface/30">
-                    <div className="flex justify-between items-center mb-2">
-                         <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
-                             <Wrench size={12} /> Neural Tools
-                         </label>
-                         <span className="text-[10px] text-slate-600 font-mono">{equippedToolIds.length} Equipped</span>
-                    </div>
-                    <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
-                        {availableTools.map(tool => {
-                            const isEquipped = equippedToolIds.includes(tool.id);
-                            return (
-                                <div 
-                                    key={tool.id}
-                                    onClick={() => onToggleTool(tool.id)}
-                                    className={`flex items-center gap-2 p-2 rounded cursor-pointer border ${isEquipped ? 'bg-brand-900/20 border-brand-500/50' : 'bg-black border-dark-border hover:border-slate-600'}`}
-                                >
-                                    <div className={`w-3 h-3 rounded-sm border flex items-center justify-center ${isEquipped ? 'bg-brand-500 border-brand-500 text-white' : 'border-slate-600'}`}>
-                                        {isEquipped && <Check size={8} />}
-                                    </div>
-                                    <div className="text-lg leading-none">{tool.icon}</div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className={`text-xs font-bold truncate ${isEquipped ? 'text-white' : 'text-slate-400'}`}>{tool.name}</div>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                        {availableTools.length === 0 && (
-                            <div className="text-[10px] text-slate-600 italic text-center py-2">No weapons forged yet.</div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* User Prompt */}
-            <div className="flex-1 p-4 flex flex-col bg-dark-bg min-h-[200px]">
-                <div className="flex justify-between items-center mb-2">
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Injection Vector (Prompt)</label>
-                    <div className="flex items-center space-x-2">
-                         <span className="text-[10px] text-slate-500 uppercase">Temp: {config.temperature}</span>
-                         <input 
-                            type="range" 
-                            min="0" 
-                            max="2" 
-                            step="0.1" 
-                            value={config.temperature}
-                            onChange={(e) => setConfig({...config, temperature: parseFloat(e.target.value)})}
-                            className="w-16 accent-brand-500 h-1 bg-dark-border rounded-lg appearance-none cursor-pointer"
-                        />
-                    </div>
-                </div>
-                <textarea 
-                    value={config.userPrompt}
-                    onChange={(e) => setConfig({...config, userPrompt: e.target.value})}
-                    placeholder="Enter payload to test agent response..."
-                    className="flex-1 w-full bg-black border border-dark-border rounded-none p-3 text-sm text-slate-200 placeholder-slate-700 focus:outline-none focus:border-brand-500 font-mono resize-none"
-                />
+            <div className="p-4 bg-dark-surface border-t border-dark-border">
+                 <textarea 
+                     value={config.userPrompt}
+                     onChange={(e) => setConfig({...config, userPrompt: e.target.value})}
+                     className="w-full bg-dark-bg border border-dark-border rounded p-2 text-sm text-white"
+                     placeholder="Enter prompt..."
+                 />
+                 <button onClick={handleRun} className="mt-2 w-full bg-brand-600 text-white py-2 rounded font-bold text-xs uppercase">Run Simulation</button>
             </div>
         </div>
-
-        {/* Right Column: Output */}
-        <div className="flex-1 flex flex-col bg-black p-6 overflow-y-auto relative min-h-[400px]">
-             <label className="block text-[10px] font-bold text-slate-500 mb-4 uppercase tracking-wide">Terminal Output</label>
-             {error && (
-                 <div className="p-4 bg-red-900/20 border border-red-800 text-red-200 text-sm mb-4 font-mono">
-                     [ERROR]: {error}
-                 </div>
-             )}
-             
-             {/* Evaluation Result Feedback */}
-             {evaluationResult && (
-                 <div className={`p-4 mb-4 border ${evaluationResult.passed ? 'bg-green-900/20 border-green-800 text-green-400' : 'bg-amber-900/20 border-amber-800 text-amber-400'}`}>
-                     <div className="flex items-start space-x-3">
-                        {evaluationResult.passed ? <CheckCircle size={20} className="mt-0.5 shrink-0" /> : <AlertCircle size={20} className="mt-0.5 shrink-0" />}
-                        <div>
-                            <p className="font-bold text-sm uppercase">{evaluationResult.passed ? 'Breach Successful' : 'Access Denied'}</p>
-                            <p className="text-xs opacity-90 font-mono mt-1">{evaluationResult.feedback}</p>
-                        </div>
-                     </div>
-                 </div>
-             )}
-
-             <div className="prose prose-invert prose-sm max-w-none font-mono text-slate-300">
-                 {response ? (
-                     <ReactMarkdown>{response}</ReactMarkdown>
-                 ) : (
-                     <div className="text-slate-700 italic text-xs">Waiting for execution...</div>
-                 )}
-             </div>
-
-             {/* AI Nudge Toast */}
-             {showNudge && !isTutorOpen && (
-                 <div className="absolute bottom-6 right-6 max-w-xs animate-in slide-in-from-bottom-5 fade-in">
-                     <div className="bg-brand-900/90 border border-brand-500/50 backdrop-blur-md p-4 rounded shadow-[0_0_20px_rgba(14,165,233,0.2)]">
-                         <div className="flex items-start space-x-3">
-                             <div className="bg-brand-500 p-1.5 rounded-none shrink-0 animate-pulse">
-                                 <Lightbulb size={16} className="text-white" />
-                             </div>
-                             <div>
-                                 <h4 className="text-xs font-bold text-white mb-1 uppercase">Hint Available</h4>
-                                 <p className="text-[10px] text-brand-200 mb-2">Detection systems indicate you are struggling. Request tactical assist?</p>
-                                 <div className="flex space-x-2">
-                                     <button 
-                                        onClick={() => handleTutorAsk(error ? "Analyze this error log" : "Provide tactical hint")}
-                                        className="text-[10px] bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded-none transition-colors uppercase font-bold"
-                                     >
-                                         Request Assist
-                                     </button>
-                                     <button 
-                                        onClick={() => setShowNudge(false)}
-                                        className="text-[10px] text-brand-300 hover:text-white px-2 py-1.5 uppercase"
-                                     >
-                                         Ignore
-                                     </button>
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-             )}
-        </div>
-
-        {/* Tutor Overlay */}
-        {isTutorOpen && (
-            <div className="absolute right-0 top-0 bottom-0 w-80 bg-dark-surface border-l border-dark-border shadow-2xl flex flex-col z-20">
-                <div className="p-4 border-b border-dark-border flex items-center justify-between bg-brand-900/20">
-                    <div className="flex items-center space-x-2 text-brand-400">
-                        <Terminal size={16} />
-                        <span className="font-bold text-xs uppercase">Tactical Support</span>
-                    </div>
-                    <button onClick={() => setIsTutorOpen(false)} className="text-slate-400 hover:text-white">
-                        <X size={16} />
-                    </button>
-                </div>
-                <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                    <p className="text-xs text-slate-300 bg-dark-bg p-3 border border-dark-border font-mono">
-                        System ready. I can analyze your prompt structure or suggest injection vectors.
-                    </p>
-                    {tutorResponse && (
-                         <div className="text-xs text-slate-300 bg-dark-bg p-3 border border-dark-border animate-in fade-in slide-in-from-bottom-2 font-mono">
-                            <ReactMarkdown>{tutorResponse}</ReactMarkdown>
-                         </div>
-                    )}
-                     {isTutorLoading && (
-                        <div className="flex justify-center py-4">
-                            <Loader2 className="animate-spin text-brand-400" size={20} />
-                        </div>
-                    )}
-                </div>
-                <div className="p-4 border-t border-dark-border">
-                    <div className="relative">
-                        <textarea
-                            value={tutorQuery}
-                            onChange={(e) => setTutorQuery(e.target.value)}
-                            onKeyDown={(e) => {
-                                if(e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleTutorAsk();
-                                }
-                            }}
-                            placeholder="Input query..."
-                            className="w-full bg-black border border-dark-border pl-3 pr-10 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 resize-none h-20 font-mono"
-                        />
-                        <button 
-                            onClick={() => handleTutorAsk()}
-                            disabled={isTutorLoading || !tutorQuery.trim()}
-                            className="absolute right-2 bottom-2 p-1.5 bg-brand-600 text-white rounded-none hover:bg-brand-500 transition-colors disabled:opacity-50"
-                        >
-                            <MessageSquare size={14} />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
-      </div>
     </div>
   );
 };

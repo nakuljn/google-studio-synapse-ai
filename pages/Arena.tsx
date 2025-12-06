@@ -1,90 +1,62 @@
 
 import React from 'react';
 import { WARGAMES } from '../constants';
-import { Globe, Users, Swords, WifiOff, Wifi } from 'lucide-react';
+import { Globe, Wifi, Swords } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Wargames: React.FC = () => {
-    // Split games into online vs offline for better structure
-    const trainingSims = WARGAMES.filter(g => g.type === 'PvE');
+    // Only Live Combat
     const liveCombat = WARGAMES.filter(g => g.type === 'PvP');
 
     return (
-        <div className="p-6 md:p-10 h-full overflow-y-auto bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
-             <div className="mb-10">
-                <h1 className="text-3xl font-bold text-white mb-2 font-mono uppercase tracking-tight flex items-center gap-3">
-                    <Globe className="text-red-500" size={32} />
-                    Wargames Arena
+        <div className="p-6 md:p-10 h-full overflow-y-auto bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-dark-bg">
+             <div className="mb-10 text-center">
+                <h1 className="text-4xl font-bold text-white mb-2 font-mono uppercase tracking-tight flex items-center justify-center gap-4">
+                    <Swords className="text-brand-500 animate-pulse" size={40} />
+                    Live Arena
                 </h1>
-                <p className="text-slate-400 font-mono text-sm max-w-2xl">
-                    Deploy agents in combat simulations. Train offline or compete on the global network.
+                <p className="text-slate-400 font-mono text-sm max-w-2xl mx-auto">
+                    Global PvP Network. Deploy your agents against other commanders in real-time battles.
+                    <br/><span className="text-brand-500 font-bold uppercase text-xs">High Stakes Environment</span>
                 </p>
              </div>
 
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                 {/* Training / Offline */}
-                 <div>
-                     <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-widest border-b border-dark-border pb-2">
-                         <WifiOff size={20} className="text-slate-500" />
-                         Training Sims (Offline)
-                     </h2>
-                     <div className="space-y-6">
-                        {trainingSims.map(game => (
-                             <div key={game.id} className="bg-dark-surface border border-dark-border rounded-lg overflow-hidden group hover:border-brand-500/50 transition-all flex flex-col">
-                                 <div className="h-32 bg-black relative overflow-hidden">
-                                     <img src={game.coverImage} alt={game.title} className="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0" />
-                                     <div className="absolute top-2 right-2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 uppercase rounded">
-                                         Solo / PvE
-                                     </div>
-                                 </div>
-                                 <div className="p-4">
-                                     <h3 className="text-lg font-bold text-white uppercase tracking-wide">{game.title}</h3>
-                                     <p className="text-slate-400 text-xs mb-4">{game.description}</p>
-                                     <Link 
-                                        to={`/arena/lobby/${game.id}`} 
-                                        className="w-full block text-center bg-dark-bg border border-dark-border hover:bg-brand-600 hover:text-white hover:border-brand-500 text-slate-300 py-2 rounded text-xs font-bold uppercase transition-all"
-                                    >
-                                        Start Simulation
-                                    </Link>
-                                 </div>
-                             </div>
-                        ))}
-                     </div>
-                 </div>
-
-                 {/* Live PvP */}
-                 <div>
-                     <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-widest border-b border-dark-border pb-2">
-                         <Wifi size={20} className="text-red-500 animate-pulse" />
-                         Live Network (PvP)
-                     </h2>
-                     <div className="space-y-6">
-                        {liveCombat.map(game => (
-                             <div key={game.id} className="bg-dark-surface border border-red-900/30 rounded-lg overflow-hidden group hover:border-red-500 transition-all flex flex-col">
-                                 <div className="h-40 bg-black relative overflow-hidden">
-                                     <img src={game.coverImage} alt={game.title} className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 mix-blend-overlay" />
-                                     <div className="absolute inset-0 bg-gradient-to-t from-red-900/50 to-transparent" />
-                                     <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase rounded">
-                                         Ranked / PvP
-                                     </div>
-                                 </div>
-                                 <div className="p-4 bg-red-900/5">
-                                     <h3 className="text-lg font-bold text-white uppercase tracking-wide">{game.title}</h3>
-                                     <p className="text-slate-400 text-xs mb-4">{game.description}</p>
-                                     <div className="flex justify-between items-center mb-4 text-[10px] font-mono text-red-300">
-                                         <span>{game.activePlayers} Commanders Online</span>
-                                         <span className="animate-pulse">● LIVE</span>
-                                     </div>
-                                     <Link 
-                                        to={`/arena/lobby/${game.id}`} 
-                                        className="w-full block text-center bg-red-900/20 text-red-400 border border-red-900/50 hover:bg-red-600 hover:text-white hover:border-red-500 py-2 rounded text-xs font-bold uppercase transition-all"
+             <div className="max-w-5xl mx-auto">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {liveCombat.map(game => (
+                            <div key={game.id} className="bg-dark-surface border border-brand-900/30 rounded-xl overflow-hidden group hover:border-brand-500 transition-all flex flex-col shadow-2xl shadow-brand-900/10">
+                                <div className="h-48 bg-black relative overflow-hidden">
+                                    <img src={game.coverImage} alt={game.title} className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 mix-blend-overlay" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-brand-900/80 to-transparent" />
+                                    <div className="absolute top-4 right-4 bg-brand-600 text-white text-[10px] font-bold px-3 py-1 uppercase rounded shadow-lg shadow-brand-500/20">
+                                        Ranked Match
+                                    </div>
+                                </div>
+                                <div className="p-6 bg-brand-950/10">
+                                    <h3 className="text-2xl font-bold text-white uppercase tracking-wide mb-2">{game.title}</h3>
+                                    <p className="text-slate-400 text-sm mb-6">{game.description}</p>
+                                    
+                                    <div className="flex justify-between items-center mb-6 text-xs font-mono text-brand-300 bg-brand-900/20 p-3 rounded">
+                                        <span className="flex items-center gap-2"><Globe size={14}/> {game.activePlayers} Commanders Online</span>
+                                        <span className="animate-pulse flex items-center gap-1"><Wifi size={14}/> LIVE</span>
+                                    </div>
+                                    
+                                    <Link 
+                                    to={`/arena/lobby/${game.id}`} 
+                                    className="w-full block text-center bg-brand-600 text-white hover:bg-brand-500 py-3 rounded font-bold uppercase tracking-widest transition-all shadow-lg shadow-brand-600/20"
                                     >
                                         Find Match
                                     </Link>
-                                 </div>
-                             </div>
-                        ))}
-                     </div>
+                                </div>
+                            </div>
+                    ))}
+                    
+                    {/* Placeholder for Coming Soon */}
+                    <div className="bg-dark-surface/30 border border-dark-border border-dashed rounded-xl flex flex-col items-center justify-center p-10 opacity-50 hover:opacity-80 transition-opacity cursor-not-allowed">
+                        <Swords size={48} className="text-slate-600 mb-4" />
+                        <div className="text-lg font-bold text-slate-500 uppercase tracking-widest">Seasonal Event</div>
+                        <div className="text-xs text-slate-600 mt-2">Unlocks in 3 Days</div>
+                    </div>
                  </div>
              </div>
         </div>

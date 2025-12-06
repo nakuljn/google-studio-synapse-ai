@@ -15,10 +15,27 @@ export interface Weapon {
   cost: number;
 }
 
+export interface KnowledgeFile {
+  id: string;
+  name: string;
+  type: 'PDF' | 'TXT' | 'MD';
+  size: string;
+}
+
+export interface PlaygroundState {
+  systemInstruction: string;
+  userPrompt: string;
+  temperature: number;
+  model: ModelType;
+  agentRole?: string;
+  agentGoal?: string;
+}
+
 export interface Agent {
   id: string;
   name: string;
-  class: 'INFILTRATOR' | 'DEFENDER' | 'SUPPORT' | 'ANALYST';
+  description?: string; 
+  class: 'INFILTRATOR' | 'DEFENDER' | 'SUPPORT' | 'ANALYST' | 'ROOKIE';
   level: number;
   avatar: string; // Emoji or URL
   stats: {
@@ -28,6 +45,10 @@ export interface Agent {
   };
   config: PlaygroundState;
   equippedTools: string[]; // IDs of Weapons
+  knowledgeBase: KnowledgeFile[];
+  subAgents?: string[]; // IDs of other agents in the unit
+  status: 'ACTIVE' | 'BENCH'; // Deployed vs Reserves
+  dailyCost: number; // Maintenance cost in Coins/day
 }
 
 export interface Operation {
@@ -42,6 +63,9 @@ export interface Operation {
   requiredClass?: string;
   validationCriteria?: string;
   initialPlaygroundState?: PlaygroundState;
+  unlockCost?: number; // Cost in Stars to play
+  chapter: number;
+  isBoss?: boolean;
 }
 
 export interface Wargame {
@@ -51,13 +75,6 @@ export interface Wargame {
   description: string;
   activePlayers: number;
   type: 'PvE' | 'PvP';
-}
-
-export interface PlaygroundState {
-  systemInstruction: string;
-  userPrompt: string;
-  temperature: number;
-  model: ModelType;
 }
 
 export interface UserProfile {
@@ -73,6 +90,14 @@ export interface UserProfile {
 export interface EvaluationResult {
     passed: boolean;
     feedback: string;
+}
+
+export interface DrillResult {
+    drillType: 'REFLEX' | 'SHIELD' | 'TOOL';
+    agentId: string;
+    score: number; // 0-100
+    details: string;
+    timestamp: number;
 }
 
 export interface Bounty {
@@ -107,6 +132,7 @@ export interface Course {
   duration: string;
   price: number; // In Stars (0 = free)
   locked: boolean;
+  unlockLevel?: number; // Level required to unlock for free
   modules: Module[];
 }
 
